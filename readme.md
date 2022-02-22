@@ -1,11 +1,16 @@
 # 说明
 ```$xslt
   1. 之前的Idempotent改的一个spring boot starter
-  2. 关于spring boot starter，该starter是基于@Import注解来做的。
-     个人理解，starter有两种方式：
+  2. 该starter是基于@Import注解来做的。个人理解，starter有两种方式：
        a. 在 resources 目录下新建 META-INF/spring.factories 添加 org.springframework.boot.autoconfigure.EnableAutoConfiguration=自动装配配置类全路径
        b. 自定义一个注解@EnableIdempotent 上面加上 @Import(自动装配配置类.class)，在 工程启动类上 添加上@EnableIdempotent注解
-  3. 在IdempotentInterceptor的generateCipherText中，会有一个reset的动作。这是因为IOUtils.toByteArray会将ServletInputStream的pos推到流的尾部
+  3. 工程流程简述: 
+       a. idempotent-starter-test 引入 spring-boot-starter-idempotent 并在 idempotent-starter-test 的工程启动类上添加了@EnableIdempotent注解
+       b. Spring 处理 idempotent-starter-test 的工程启动类时解析到 @EnableIdempotent 注解
+       c. Spring 处理 @EnableIdempotent 注解时发现，它被@Import注解修饰，于是开始处理 @Import 注解
+       d. 通过 @Import 注解，将 IdempotentAutoConfigure 处理、纳入到IOC容器
+       e. 处理 IdempotentAutoConfigure 时通过它上面的 @ComponentScan 将 spring-boot-starter-idempotent 工程中的其他对象处理、纳入到IOC容器
+  4. 在IdempotentInterceptor的generateCipherText中，会有一个reset的动作。这是因为IOUtils.toByteArray会将ServletInputStream的pos推到流的尾部
      后面再读的时候，就会判定为流已经读取完毕, 从而导致无法从ServletInputStream流中获取到任何接口需要的参数, 具体参见
      AbstractMessageConverterMethodArgumentResolver.EmptyBodyCheckingHttpInputMessage的源码
      里面有个PushbackInputStream.read()，如果不进行reset，这个read返回的就是-1
